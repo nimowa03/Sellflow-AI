@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+celery
+redis
+motor
+pymongo
+crewai
+langchain_google_genai
+python-dotenv
+chromadb
+sentence-transformers
