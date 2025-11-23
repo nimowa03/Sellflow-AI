@@ -10,6 +10,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [step, setStep] = useState<"input" | "analyzing" | "result" | "agent-setup">("input");
   const [activeAgent, setActiveAgent] = useState<number>(-1);
+  const [logs, setLogs] = useState<string[]>([]);
 
   const agents = [
     { name: "트렌드 헌터", role: "황금 키워드 발굴", icon: "🕵️‍♂️", color: "text-blue-400" },

@@ -49,6 +49,41 @@ services:
     networks:
       - ai_network
 
+  # Backend (FastAPI + CrewAI)
+  backend:
+    build: ../backend
+    container_name: sellflow_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+    networks:
+      - ai_network
+    depends_on:
+      - mongo
+      - redis
+      - chroma
+
+  # Frontend (Next.js)
+  frontend:
+    build: ../frontend
+    container_name: sellflow_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    networks:
+      - ai_network
+    depends_on:
+      - backend
+
 networks:
   ai_network:
     driver: bridge
