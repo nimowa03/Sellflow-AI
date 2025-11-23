@@ -8,8 +8,24 @@ import clsx from "clsx";
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [step, setStep] = useState<"input" | "analyzing" | "result">("input");
-  const [logs, setLogs] = useState<string[]>([]);
+  const [step, setStep] = useState<"input" | "analyzing" | "result" | "agent-setup">("input");
+  const [activeAgent, setActiveAgent] = useState<number>(-1);
+
+  const agents = [
+    { name: "트렌드 헌터", role: "황금 키워드 발굴", icon: "🕵️‍♂️", color: "text-blue-400" },
+    { name: "마켓 전략가", role: "소구점 분석", icon: "🧠", color: "text-purple-400" },
+    { name: "크리에이티브 디렉터", role: "콘텐츠 생성", icon: "🎨", color: "text-pink-400" },
+    { name: "컴플라이언스 오피서", role: "리스크 방어", icon: "⚖️", color: "text-green-400" },
+  ];
+
+  const startAgentSetup = () => {
+    setStep("agent-setup");
+    agents.forEach((_, index) => {
+      setTimeout(() => {
+        setActiveAgent(index);
+      }, index * 1200 + 500);
+    });
+  };
 
   const handleAnalyze = () => {
     if (!url) return;
@@ -146,6 +162,7 @@ export default function Home() {
             key="result"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, x: -100 }}
             className="w-full max-w-4xl"
           >
             <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 relative overflow-hidden">
@@ -175,7 +192,10 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <button className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-4 rounded-xl text-lg hover:opacity-90 transition-opacity shadow-lg shadow-primary/25">
+                  <button
+                    onClick={startAgentSetup}
+                    className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-4 rounded-xl text-lg hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
+                  >
                     이 데이터로 내 상품 만들기
                   </button>
                 </div>
@@ -211,6 +231,58 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {step === "agent-setup" && (
+          <motion.div
+            key="agent-setup"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full max-w-4xl text-center space-y-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white">
+              <span className="text-primary">AI 팀</span>을 소집하고 있습니다...
+            </h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {agents.map((agent, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0.3, scale: 0.9, y: 20 }}
+                  animate={{
+                    opacity: activeAgent >= index ? 1 : 0.3,
+                    scale: activeAgent >= index ? 1.05 : 0.9,
+                    y: activeAgent >= index ? 0 : 20,
+                    borderColor: activeAgent >= index ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.1)"
+                  }}
+                  className="bg-black/40 backdrop-blur border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-4 transition-colors duration-500"
+                >
+                  <div className="text-4xl mb-2">{agent.icon}</div>
+                  <div className="font-bold text-white">{agent.name}</div>
+                  <div className={`text-xs ${agent.color}`}>{agent.role}</div>
+                  {activeAgent >= index && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "100%" }}
+                      className="h-1 bg-gradient-to-r from-primary to-secondary rounded-full w-full mt-2"
+                    />
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {activeAgent >= agents.length - 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <button className="bg-white text-black font-bold py-4 px-12 rounded-full text-xl hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                  대시보드로 입장하기
+                </button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
