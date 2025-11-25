@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-export default function Home() {
+export default function DashboardPage() {
     const [query, setQuery] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
     const [status, setStatus] = useState('idle'); // idle, processing, completed
@@ -68,7 +68,7 @@ export default function Home() {
     return (
         <main className="flex min-h-screen flex-col items-center p-24 bg-gray-900 text-white">
             <h1 className="text-4xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-                AI Marketing Hacker
+                SellFlow-AI Dashboard
             </h1>
 
             <div className="w-full max-w-2xl space-y-8">
