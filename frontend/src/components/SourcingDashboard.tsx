@@ -1,21 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Terminal, Search, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Send, Loader2, Terminal, Search, TrendingUp, FileText, Image as ImageIcon, Lightbulb, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface GoldenKeyword {
-  keyword: string;
-  search_volume: string;
-  competition: string;
-  reason: string;
-  risk: string;
-}
+import ReactMarkdown from 'react-markdown';
 
 interface SourcingResult {
-  query: string;
-  golden_keywords: GoldenKeyword[];
-  market_analysis: string;
+  final_keyword: string;
+  product_names: string[];
+  hooking_messages: string[];
+  detail_page_plan: string;
+  image_prompt: string;
+  strategy_summary: string;
 }
 
 export default function SourcingDashboard() {
@@ -29,7 +25,7 @@ export default function SourcingDashboard() {
   useEffect(() => {
     // Connect to WebSocket
     ws.current = new WebSocket('ws://localhost:8000/ws');
-    
+
     ws.current.onopen = () => {
       console.log('Connected to WebSocket');
       setLogs(prev => [...prev, 'System: Connected to Real-time Agent Stream...']);
@@ -80,7 +76,7 @@ export default function SourcingDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to start task');
       }
@@ -92,139 +88,162 @@ export default function SourcingDashboard() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
+    <div className="w-full max-w-7xl mx-auto p-6 space-y-8">
       {/* Header Section */}
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-          AI Product Sourcing Agent
+        <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+          AI Marketing Hacker
         </h1>
-        <p className="text-gray-400 max-w-2xl mx-auto">
-          Enter a keyword to deploy autonomous AI agents. They will analyze market trends, 
-          competition, and find "Golden Keywords" for you in real-time.
+        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          Deploy your elite team of 5 AI agents. From sourcing to content creation,
+          watch them build your product strategy in real-time.
         </p>
       </div>
 
       {/* Search Input */}
-      <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
+      <form onSubmit={handleSearch} className="relative max-w-3xl mx-auto">
         <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-1000"></div>
-          <div className="relative flex items-center bg-gray-900 rounded-xl border border-gray-800 p-2">
-            <Search className="w-6 h-6 text-gray-400 ml-3" />
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-75 transition duration-1000"></div>
+          <div className="relative flex items-center bg-gray-900 rounded-2xl border border-gray-800 p-2">
+            <Search className="w-6 h-6 text-gray-400 ml-4" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g., Camping Chair, Wireless Earbuds..."
-              className="w-full bg-transparent text-white px-4 py-3 focus:outline-none text-lg placeholder-gray-500"
+              placeholder="Enter a product idea (e.g., Camping Chair, Organic Dog Food)..."
+              className="w-full bg-transparent text-white px-4 py-4 focus:outline-none text-xl placeholder-gray-500"
               disabled={isSearching}
             />
             <button
               type="submit"
               disabled={isSearching}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
-              {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {isSearching ? 'Analyzing...' : 'Deploy Agent'}
+              {isSearching ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
+              {isSearching ? 'Hacking...' : 'Launch Agents'}
             </button>
           </div>
         </div>
       </form>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Terminal / Logs Section */}
-        <div className="bg-gray-950 rounded-xl border border-gray-800 overflow-hidden flex flex-col h-[500px] shadow-2xl">
-          <div className="bg-gray-900 px-4 py-2 border-b border-gray-800 flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Terminal / Logs Section (Left Side - 4 cols) */}
+        <div className="lg:col-span-4 bg-gray-950 rounded-xl border border-gray-800 overflow-hidden flex flex-col h-[700px] shadow-2xl">
+          <div className="bg-gray-900 px-4 py-3 border-b border-gray-800 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-green-400" />
-            <span className="text-xs font-mono text-gray-400">Agent Terminal Output</span>
+            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Mission Control Log</span>
           </div>
-          <div className="flex-1 p-4 font-mono text-sm overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="flex-1 p-4 font-mono text-xs sm:text-sm overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {logs.length === 0 && (
-              <div className="text-gray-600 italic text-center mt-20">
-                Waiting for mission...
+              <div className="text-gray-600 italic text-center mt-32">
+                Waiting for command...
               </div>
             )}
             {logs.map((log, i) => (
-              <div key={i} className="text-green-400 break-words">
+              <div key={i} className="break-words">
                 <span className="text-gray-600 mr-2">[{new Date().toLocaleTimeString()}]</span>
-                {log}
+                <span className={log.startsWith('System:') ? 'text-blue-400' : 'text-green-400'}>
+                  {log}
+                </span>
               </div>
             ))}
             <div ref={logsEndRef} />
           </div>
         </div>
 
-        {/* Results Section */}
-        <div className="space-y-6 h-[500px] overflow-y-auto pr-2">
+        {/* Results Section (Right Side - 8 cols) */}
+        <div className="lg:col-span-8 space-y-6 h-[700px] overflow-y-auto pr-2 scrollbar-hide">
           <AnimatePresence>
             {result && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
+                className="space-y-8"
               >
-                {/* Market Analysis Card */}
-                <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
-                    Market Analysis
+                {/* 1. Strategy Summary */}
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 p-8 shadow-xl">
+                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                    <Target className="w-8 h-8 text-red-500" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">
+                      Final Strategy: {result.final_keyword}
+                    </span>
                   </h3>
-                  <p className="text-gray-300 leading-relaxed">
-                    {result.market_analysis}
+                  <p className="text-gray-300 leading-relaxed text-lg">
+                    {result.strategy_summary}
                   </p>
                 </div>
 
-                {/* Golden Keywords List */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400" />
-                    Golden Keywords Discovered
-                  </h3>
-                  {result.golden_keywords?.map((item, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-blue-500/50 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-lg font-bold text-white">{item.keyword}</h4>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          item.risk.includes('없음') || item.risk.includes('낮음') 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
-                          {item.risk}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500 block">Search Volume</span>
-                          <span className="text-gray-300">{item.search_volume}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Competition</span>
-                          <span className="text-gray-300">{item.competition}</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-400 bg-gray-900/50 p-2 rounded">
-                        💡 {item.reason}
-                      </p>
-                    </motion.div>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 2. Product Names */}
+                  <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-6">
+                    <h4 className="text-lg font-semibold text-blue-400 mb-4 flex items-center gap-2">
+                      <Lightbulb className="w-5 h-5" />
+                      Winning Product Names
+                    </h4>
+                    <ul className="space-y-3">
+                      {result.product_names?.map((name, i) => (
+                        <li key={i} className="flex items-center gap-3 text-white bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                          <span className="text-blue-500 font-bold">0{i + 1}</span>
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* 3. Hooking Messages */}
+                  <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-6">
+                    <h4 className="text-lg font-semibold text-purple-400 mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Killer Hooks
+                    </h4>
+                    <ul className="space-y-3">
+                      {result.hooking_messages?.map((msg, i) => (
+                        <li key={i} className="text-gray-300 text-sm italic bg-gray-800/30 p-3 rounded-lg border-l-2 border-purple-500">
+                          "{msg}"
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
+
+                {/* 4. Detail Page Plan */}
+                <div className="bg-gray-900 rounded-xl border border-gray-800 p-8">
+                  <h4 className="text-xl font-semibold text-green-400 mb-6 flex items-center gap-2">
+                    <FileText className="w-6 h-6" />
+                    Detail Page Blueprint
+                  </h4>
+                  <div className="prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-white prose-strong:text-green-300">
+                    <ReactMarkdown>{result.detail_page_plan}</ReactMarkdown>
+                  </div>
+                </div>
+
+                {/* 5. Image Prompt */}
+                <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
+                  <h4 className="text-lg font-semibold text-pink-400 mb-4 flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5" />
+                    AI Image Prompt
+                  </h4>
+                  <div className="bg-black/50 p-4 rounded-lg border border-gray-700 font-mono text-sm text-gray-400 break-all">
+                    {result.image_prompt}
+                  </div>
+                </div>
+
               </motion.div>
             )}
-            
+
             {!result && !isSearching && logs.length > 0 && (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Agent is working... Results will appear here.
+              <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                <p>Agents are collaborating... This may take a minute.</p>
               </div>
             )}
-            
+
             {!result && !isSearching && logs.length === 0 && (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Ready to analyze.
+              <div className="flex flex-col items-center justify-center h-full text-gray-600 space-y-4">
+                <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center border-2 border-gray-800">
+                  <Target className="w-10 h-10 text-gray-700" />
+                </div>
+                <p>Ready to launch mission.</p>
               </div>
             )}
           </AnimatePresence>

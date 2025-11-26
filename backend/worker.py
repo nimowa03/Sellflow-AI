@@ -40,7 +40,7 @@ def run_sourcing_task(query: str):
         
         # Note: In a real scenario, we would pass a callback to capture CrewAI's verbose output
         # and stream it via publish_update. For now, we just run it.
-        result = create_sourcing_crew(query)
+        result = create_sourcing_crew(query, callback_function=publish_update)
         result_str = str(result)
         
         publish_update("CrewAI 분석 완료! 결과 처리 중...")

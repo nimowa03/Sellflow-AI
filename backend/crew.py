@@ -1,5 +1,6 @@
 import os
 import json
+import yaml
 import requests
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -36,66 +37,118 @@ search_tool = Tool(
     description="Useful for searching the internet for current events, trends, and market data. Input should be a search query string."
 )
 
-def create_sourcing_crew(query: str):
+# 3. Load Config Helper
+def load_config(file_path):
+    with open(file_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def create_sourcing_crew(query: str, callback_function=None):
     """
-    Creates and runs the Product Sourcing Crew
+    Creates and runs the Product Sourcing Crew (Multi-Agent)
     """
     
-    # 3. 에이전트 정의 (Agents)
+    # Load Configurations
+    config_dir = os.path.join(os.path.dirname(__file__), 'config')
+    agents_config = load_config(os.path.join(config_dir, 'agents.yaml'))
+    tasks_config = load_config(os.path.join(config_dir, 'tasks.yaml'))
+
+    # 4. Define Agents
+    # Manager is not used in the sequential flow explicitly but defined in config
+    
+    # Import Safety Tool
+    from tools.safety_tool import safety_tool
+
     sourcing_agent = Agent(
-        role='수석 상품 연구원 (Senior Product Researcher)',
-        goal='이커머스 시장에서 잠재력 높은 "황금 키워드" 발굴',
-        backstory="""당신은 이커머스 데이터 분석 전문가입니다. 
-        네이버와 쿠팡에서 경쟁 강도는 낮지만 검색량은 높은 틈새 키워드를 찾아내는 데 탁월한 능력을 가지고 있습니다.
-        주어진 키워드와 관련된 최신 트렌드를 검색하고 분석하여 수익성 높은 틈새 시장을 제안합니다.""",
+        role=agents_config['sourcing_agent']['role'],
+        goal=agents_config['sourcing_agent']['goal'],
+        backstory=agents_config['sourcing_agent']['backstory'],
         verbose=True,
         allow_delegation=False,
         llm=llm,
         tools=[search_tool]
     )
 
-    # 4. 태스크 정의 (Tasks)
-    task_search = Task(
-        description=f"""
-        다음 검색어에 대한 시장을 심층 분석하세요: '{query}'.
-        
-        1. '{query}'와 관련된 최신 트렌드와 연관 검색어를 조사하세요.
-        2. 검색량은 높지만 경쟁 상품 수가 적은 '황금 키워드' 5개를 식별하세요.
-        3. 각 키워드에 대해 다음을 분석하세요:
-           - 예상 검색량 (높음/중간/낮음)
-           - 경쟁 강도 (높음/중간/낮음)
-           - 추천 이유 (트렌드성, 시즌성 등)
-        4. 상표권 침해 위험이 없는지 간단히 확인하세요.
-        """,
-        expected_output="""
-        다음 항목을 포함한 JSON 형식의 보고서:
-        {
-            "query": "입력된 검색어",
-            "golden_keywords": [
-                {
-                    "keyword": "키워드1",
-                    "search_volume": "예상 검색량",
-                    "competition": "경쟁 강도",
-                    "reason": "선정 이유",
-                    "risk": "상표권 위험 여부"
-                },
-                ...
-            ],
-            "market_analysis": "전반적인 시장 분석 요약"
-        }
-        """,
+    competitor_analyst = Agent(
+        role=agents_config['competitor_analyst']['role'],
+        goal=agents_config['competitor_analyst']['goal'],
+        backstory=agents_config['competitor_analyst']['backstory'],
+        verbose=True,
+        allow_delegation=False,
+        llm=llm,
+        tools=[search_tool]
+    )
+
+    keyword_verifier = Agent(
+        role=agents_config['keyword_verifier']['role'],
+        goal=agents_config['keyword_verifier']['goal'],
+        backstory=agents_config['keyword_verifier']['backstory'],
+        verbose=True,
+        allow_delegation=False,
+        llm=llm,
+        tools=[search_tool, safety_tool] # Add safety_tool here
+    )
+
+    content_creator = Agent(
+        role=agents_config['content_creator']['role'],
+        goal=agents_config['content_creator']['goal'],
+        backstory=agents_config['content_creator']['backstory'],
+        verbose=True,
+        allow_delegation=False,
+        llm=llm,
+        tools=[search_tool]
+    )
+
+    # 5. Define Tasks
+    task_sourcing = Task(
+        description=tasks_config['sourcing_task']['description'].format(query=query),
+        expected_output=tasks_config['sourcing_task']['expected_output'],
         agent=sourcing_agent
     )
 
-    # 5. Create Crew
-    crew = Crew(
-        agents=[sourcing_agent],
-        tasks=[task_search],
-        verbose=True,
-        process=Process.sequential
+    task_competitor = Task(
+        description=tasks_config['competitor_analysis_task']['description'],
+        expected_output=tasks_config['competitor_analysis_task']['expected_output'],
+        agent=competitor_analyst,
+        context=[task_sourcing]
     )
 
-    # 6. Kickoff
+    task_verification = Task(
+        description=tasks_config['keyword_verification_task']['description'],
+        expected_output=tasks_config['keyword_verification_task']['expected_output'],
+        agent=keyword_verifier,
+        context=[task_competitor]
+    )
+
+    task_content = Task(
+        description=tasks_config['content_creation_task']['description'],
+        expected_output=tasks_config['content_creation_task']['expected_output'],
+        agent=content_creator,
+        context=[task_verification]
+    )
+
+    # Callback wrapper to handle CrewAI's step object
+    def step_callback_wrapper(step_output):
+        if callback_function:
+            try:
+                if hasattr(step_output, 'thought'):
+                    callback_function(f"Thinking: {step_output.thought[:100]}...")
+                elif hasattr(step_output, 'result'):
+                     callback_function(f"Action: {str(step_output.result)[:100]}...")
+                else:
+                    callback_function(f"Step: {str(step_output)[:100]}...")
+            except:
+                callback_function("Agent is working...")
+
+    # 6. Create Crew
+    crew = Crew(
+        agents=[sourcing_agent, competitor_analyst, keyword_verifier, content_creator],
+        tasks=[task_sourcing, task_competitor, task_verification, task_content],
+        verbose=True,
+        process=Process.sequential,
+        step_callback=step_callback_wrapper if callback_function else None
+    )
+
+    # 7. Kickoff
     result = crew.kickoff()
     
     return result
