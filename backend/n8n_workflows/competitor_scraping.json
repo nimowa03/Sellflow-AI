@@ -1,0 +1,101 @@
+{
+    "name": "Competitor Scraping Workflow",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "scrape",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                460,
+                300
+            ],
+            "webhookId": "scrape-webhook"
+        },
+        {
+            "parameters": {
+                "url": "={{$json.body.url}}",
+                "method": "GET",
+                "responseFormat": "string",
+                "options": {
+                    "followRedirects": true
+                }
+            },
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                680,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "dataPropertyName": "data",
+                "extractionValues": {
+                    "values": [
+                        {
+                            "key": "title",
+                            "cssSelector": "title",
+                            "returnArray": false
+                        },
+                        {
+                            "key": "description",
+                            "cssSelector": "meta[name='description']",
+                            "value": "content",
+                            "returnArray": false
+                        },
+                        {
+                            "key": "images",
+                            "cssSelector": "img",
+                            "value": "src",
+                            "returnArray": true
+                        },
+                        {
+                            "key": "body_text",
+                            "cssSelector": "body",
+                            "returnArray": false
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "HTML Extract",
+            "type": "n8n-nodes-base.htmlExtract",
+            "typeVersion": 1,
+            "position": [
+                900,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "HTML Extract",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
