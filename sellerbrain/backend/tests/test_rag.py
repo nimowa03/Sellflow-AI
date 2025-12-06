@@ -2,7 +2,7 @@ import sys
 import os
 
 # Add backend to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.vector_db import safety_db
 
@@ -18,3 +18,4 @@ def test_safety():
 
 if __name__ == "__main__":
     test_safety()
+
